@@ -10,12 +10,12 @@ div_by_rsi_and_store_remainder_in_rsi:
     ret
 
 _start:
-    ; Exit with statux code "1" single "N" argument is not provided
+    ; Exit with status code "1" if the single "N" argument is not provided
     cmp     byte [rsp], 2
     mov     rdi, 1
     jnz     exit_with_rdi_exit_code
 
-    ; Parse "N" argument and store the number in rax
+    ; Parse the "N" argument and store the number in rax
     mov     rsi, [rsp+16]
     mov     rax, 0
     loop_store_cli_N_in_rax:
@@ -80,11 +80,16 @@ _start:
                 jnz     print_num_loop
         skip_num:
 
-        ; Do a write syscall to output the string in rbx. To do so,
-        ; we create a buffer containing a newline, followed by rbx on the stack
-        ; and point the write syscall to the newline starting the buffer.
-        ; We put the newline at the start because putting it at the end
-        ; requires additional operations because of little-edianness
+        ; Do a write syscall to output the string in rbx.
+        ; We push rbx followed by another word containing a newline (0x0A)
+        ; on top of the stack and then use the stack as the buffer to write
+        ; from. We push the newline word on the top of the stack, with the
+        ; newline character in the last byte of the 8-byte word which
+        ; prevents a gap between the newline and the string in rbx.
+        ; Alternatively, we could shift the bytes in rbx by the correct amount,
+        ; push rbx on top of the stack, followed by a word with a newline at
+        ; the start, but this might be more complicated. (The current
+        ; behaviour isn't broke and I currently don't want to fix it.)
         mov     rax, 1
         mov     rdi, 1
         push    rbx
